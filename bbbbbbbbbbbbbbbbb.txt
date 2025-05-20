@@ -1,0 +1,173 @@
+
+// Root structure: license-admin
+
+// === FILE: /license-admin/.env.local ===
+MONGODB_URI=your_mongodb_atlas_uri
+NEXTAUTH_SECRET=your_nextauth_secret
+ADMIN_EMAIL=admin@example.com
+
+// === FILE: /license-admin/package.json ===
+{
+  "name": "license-admin",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "mongoose": "^7.0.0",
+    "tailwindcss": "^3.0.0",
+    "lucide-react": "latest"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.0.0"
+  }
+}
+
+// === FILE: /license-admin/tailwind.config.js ===
+module.exports = {
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}"
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+
+// === FILE: /license-admin/postcss.config.js ===
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+// === FILE: /license-admin/app/layout.tsx ===
+import './globals.css';
+import Sidebar from '@/components/Sidebar';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body className="flex">
+        <Sidebar />
+        <main className="flex-1 p-4 bg-gray-50 min-h-screen">{children}</main>
+      </body>
+    </html>
+  );
+}
+
+// === FILE: /license-admin/app/page.tsx ===
+export default function Dashboard() {
+  return <h1 className="text-2xl font-bold">Welcome to LicenseAdmin Dashboard</h1>;
+}
+
+// === FILE: /license-admin/app/licenses/page.tsx ===
+'use client';
+import { useState, useEffect } from 'react';
+
+export default function LicensesPage() {
+  const [licenses, setLicenses] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/licenses')
+      .then(res => res.json())
+      .then(data => setLicenses(data));
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-4">License Keys</h2>
+      <ul className="space-y-2">
+        {licenses.map(lic => (
+          <li key={lic._id} className="bg-white p-4 rounded shadow">
+            <p><strong>Key:</strong> {lic.key}</p>
+            <p><strong>Email:</strong> {lic.email}</p>
+            <p><strong>Device:</strong> {lic.deviceId}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// === FILE: /license-admin/app/api/licenses/route.ts ===
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/db';
+import License from '@/models/License';
+
+export async function GET() {
+  await connectDB();
+  const licenses = await License.find();
+  return NextResponse.json(licenses);
+}
+
+// === FILE: /license-admin/components/Sidebar.tsx ===
+import Link from 'next/link';
+
+export default function Sidebar() {
+  return (
+    <aside className="w-64 bg-white border-r min-h-screen p-4">
+      <h1 className="text-xl font-bold mb-6">LicenseAdmin</h1>
+      <nav className="space-y-2">
+        <Link href="/" className="block hover:text-blue-600">Dashboard</Link>
+        <Link href="/licenses" className="block hover:text-blue-600">Licenses</Link>
+        <Link href="/email-campaigns" className="block hover:text-blue-600">Email Campaigns</Link>
+        <Link href="/smtp-servers" className="block hover:text-blue-600">SMTP Servers</Link>
+        <Link href="/settings" className="block hover:text-blue-600">Settings</Link>
+      </nav>
+    </aside>
+  );
+}
+
+// === FILE: /license-admin/models/License.ts ===
+import mongoose from 'mongoose';
+
+const LicenseSchema = new mongoose.Schema({
+  email: String,
+  key: String,
+  deviceId: String,
+  isActive: Boolean,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+});
+
+export default mongoose.models.License || mongoose.model('License', LicenseSchema);
+
+// === FILE: /license-admin/lib/db.ts ===
+import mongoose from 'mongoose';
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+export default async function connectDB() {
+  if (mongoose.connection.readyState >= 1) return;
+  return mongoose.connect(MONGODB_URI);
+}
+
+// === FILE: /license-admin/app/globals.css ===
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+// === Folders to create ===
+// - /app/licenses
+// - /app/email-campaigns
+// - /app/smtp-servers
+// - /app/settings
+// - /components
+// - /lib
+// - /models
